@@ -1,0 +1,46 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Agent Team remote</title>
+<style>body{font:15px -apple-system,"SF Pro","Segoe UI",sans-serif;background:#0f1115;color:#e6e8ec;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0}.box{max-width:440px;text-align:center;padding:20px}input{width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid #444;background:#171a21;color:#e6e8ec;font:inherit;margin:8px 0}button{padding:10px 20px;border-radius:8px;border:none;background:#4f8cff;color:#fff;font:inherit;cursor:pointer}.dim{color:#8b93a3;font-size:13px;word-break:break-all}</style></head>
+<body><div class="box">
+<h2>⚡ Agent Team</h2>
+<p class="dim" id="msg">Locating your Mac…</p>
+<div id="keyrow" style="display:none">
+<p class="dim">Enter the access key (shown in the Agent Team app on your Mac under 🌐 Remote access). It's stored only in this browser.</p>
+<input type="password" id="k" placeholder="access key"><br>
+<button id="go">Connect</button>
+</div>
+<p class="dim" id="err"></p>
+<script>
+const $ = s => document.querySelector(s);
+let url = null;
+function go() {
+  if (!url) return;
+  const key = localStorage.getItem('agent-team-key') || '';
+  location.href = url + (key ? '#key=' + encodeURIComponent(key) : '');
+}
+(async () => {
+  try {
+    const r = await fetch('https://api.github.com/gists/b217f2b1ce279902ff35d0dcaad86be4');
+    if (!r.ok) throw new Error('github ' + r.status);
+    const o = await r.json();
+    const addr = JSON.parse(o.files['address.json'].content);
+    if (!addr.url) throw new Error('no address published yet');
+    url = addr.url;
+    if (localStorage.getItem('agent-team-key')) {
+      $('#msg').textContent = 'Found your Mac — connecting…';
+      go();
+    } else {
+      $('#msg').textContent = 'Found your Mac at ' + url;
+      $('#keyrow').style.display = 'block';
+    }
+  } catch (e) {
+    $('#msg').textContent = 'Could not find your Mac — is it on and online?';
+    $('#err').textContent = String(e.message || e);
+    $('#keyrow').style.display = 'block';
+  }
+})();
+$('#go').onclick = () => {
+  const k = $('#k').value.trim();
+  if (k) localStorage.setItem('agent-team-key', k);
+  go();
+};
+</script></div></body></html>
